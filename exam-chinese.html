@@ -1,0 +1,530 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>國中七上國文第二次段考全方位線上測驗平台</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #2563eb;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 20px 10px; line-height: 1.6; }
+    .container { max-width: 880px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 20px; padding: 20px; background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    h1 { color: var(--primary); font-size: 1.6rem; margin-bottom: 6px; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; }
+
+    /* 頂部懸浮計時列 */
+    #floating-timer-bar {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(30, 58, 138, 0.96);
+      backdrop-filter: blur(6px);
+      color: #fff;
+      padding: 10px 16px;
+      z-index: 9999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      font-weight: 700;
+    }
+    .timer-content {
+      max-width: 880px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.95rem;
+    }
+    .timer-badge {
+      background: #f59e0b;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-family: monospace;
+      font-size: 1.15rem;
+      letter-spacing: 1px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* 導覽按鈕 */
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; justify-content: center; }
+    .tab-btn { background: #e2e8f0; border: none; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; color: var(--text); }
+    .tab-btn:hover { background: #cbd5e1; }
+    .tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 2px 4px rgba(30,58,138,0.3); }
+
+    /* 內容容器 */
+    .card { background: var(--card-bg); border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .unit-desc { margin-bottom: 20px; padding: 14px; background: #eff6ff; border-left: 4px solid var(--primary-light); border-radius: 4px; font-size: 0.95rem; }
+    
+    /* 測驗畫面 */
+    .btn-start { display: block; width: 100%; max-width: 280px; margin: 24px auto; padding: 12px 20px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; text-align: center; transition: background 0.2s; }
+    .btn-start:hover { background: #d97706; }
+    .q-item { padding: 18px 0; border-bottom: 1px solid var(--border); }
+    .q-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 12px; color: #0f172a; }
+    .q-tag { display: inline-block; background: #e0e7ff; color: #3730a3; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; margin-bottom: 6px; font-weight: bold; }
+    .opt-label { display: block; padding: 10px 14px; margin-bottom: 8px; background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 0.95rem; }
+    .opt-label:hover { background: #e2e8f0; }
+    .opt-label input { margin-right: 10px; }
+
+    /* 交卷與診斷 */
+    .btn-submit { display: block; width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 24px; }
+    .btn-submit:hover { background: #1e40af; }
+    .score-badge { font-size: 2.4rem; font-weight: 800; text-align: center; margin: 15px 0 5px 0; color: var(--primary); }
+    .duration-badge { text-align: center; color: var(--text-muted); font-size: 1rem; margin-bottom: 15px; font-weight: 600; }
+    .analysis-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-top: 16px; }
+    .wrong-q { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px; margin-top: 12px; font-size: 0.9rem; }
+    .wrong-ans { color: var(--danger); font-weight: bold; }
+    .correct-ans { color: var(--success); font-weight: bold; }
+    .explanation { margin-top: 8px; color: #475569; font-size: 0.88rem; border-top: 1px dashed #cbd5e1; padding-top: 8px; }
+
+    /* 成績紀錄表與匯出按鈕 */
+    .table-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+    .btn-export { background: #059669; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: background 0.2s; }
+    .btn-export:hover { background: #047857; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.9rem; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background: #f1f5f9; color: var(--text-muted); }
+    .notice { font-size: 0.8rem; color: #94a3b8; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+<!-- 頂部懸浮計時列 -->
+<div id="floating-timer-bar">
+  <div class="timer-content">
+    <span id="floating-mode-name">📝 測驗進行中</span>
+    <span class="timer-badge">⏱️ <span id="stopwatch-display">00:00</span></span>
+  </div>
+</div>
+
+<div class="container">
+  <header>
+    <h1>國中七上國文第二次段考 全方位線上測驗平台</h1>
+    <p class="subtitle">涵蓋第4課《論語選》、第5課《背影》、第6課《心囚》與語文常識二「閱讀策略」</p>
+  </header>
+
+  <!-- 選單按鈕 -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchMode('ALL')">🏆 綜合模擬考卷</button>
+    <button class="tab-btn" onclick="switchMode('L4_SPECIAL')">⭐ 論語五大常考題型特訓</button>
+    <button class="tab-btn" onclick="switchMode('L4')">📗 第四課《論語選》</button>
+    <button class="tab-btn" onclick="switchMode('L5')">📘 第五課《背影》</button>
+    <button class="tab-btn" onclick="switchMode('L6')">📙 第六課《心囚》</button>
+    <button class="tab-btn" onclick="switchMode('LOG')">📊 成績監控儀表版</button>
+  </div>
+
+  <!-- 測驗操作區 -->
+  <div id="quiz-area" class="card">
+    <div class="unit-desc" id="unit-intro">
+      <strong>測驗規則：</strong>每次測驗均自專屬題庫中隨機挑選 25 題進行評量（每題 4 分，滿分 100 分）。進入測驗時頂部碼表即時啟動，交卷後記錄得分、總耗時與詳細訂正本，並自動存入成績監控儀表版。
+    </div>
+    <div id="start-screen">
+      <button class="btn-start" onclick="startQuiz()">開始隨機測驗</button>
+    </div>
+    <div id="exam-screen" style="display:none;">
+      <form id="quiz-form"></form>
+      <button class="btn-submit" onclick="submitExam()">完成測驗交卷 (滿分 100)</button>
+    </div>
+    <div id="result-screen" style="display:none;"></div>
+  </div>
+
+  <!-- 成績監控專區 -->
+  <div id="log-area" class="card" style="display:none;">
+    <div class="table-header-flex">
+      <h2>歷次學習成績紀錄（成績監控儀表版）</h2>
+      <button class="btn-export" onclick="exportToCSV()">📥 匯出 Google 試算表 (CSV)</button>
+    </div>
+    <p class="notice">🔒 系統說明：本機測驗成績均由系統永久保存，介面不設刪除按鈕，以便客觀追蹤學習成長曲線。</p>
+    <table>
+      <thead>
+        <tr>
+          <th>時間</th>
+          <th>測驗單元</th>
+          <th>得分</th>
+          <th>錯題數</th>
+          <th>作答耗時</th>
+        </tr>
+      </thead>
+      <tbody id="log-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// --- 題庫資料庫 ---
+const questionsDB = [
+  // === 第四課 論語選 & 五大常考考點 ===
+  { id: 101, unit: 'L4', tag: '文學常識', q: '關於《論語》一書的敘述，下列何者「完全正確」？', opts: ['由孔子晚年親自手訂完成', '體裁屬於編年體史書', '由孔子弟子及再傳弟子輯錄孔子及其弟子的言行而成', '全書共六十篇，內容皆為五言韻文'], ans: 2, exp: '《論語》是語錄體散文之祖，由孔子弟子及再傳弟子輯錄而成，非孔子自撰。' },
+  { id: 102, unit: 'L4', tag: '文學常識', q: '《論語》與下列哪三本書合稱為宋代以降科舉必考的「四書」？', opts: ['《詩經》、《尚書》、《禮記》', '《大學》、《中庸》、《孟子》', '《左傳》、《公羊傳》、《穀梁傳》', '《老子》、《莊子》、《列子》'], ans: 1, exp: '四書為朱熹所編定之《大學》、《中庸》、《論語》、《孟子》。' },
+  { id: 103, unit: 'L4', tag: '文學常識', q: '孔子被尊稱為「萬世師表」，最主要原因為何？', opts: ['首創私學，提倡有教無類與因材施教', '撰寫了《春秋》以尊王攘夷', '擔任魯國宰相，平定三亂', '建立了嚴格的科舉考試體系'], ans: 0, exp: '孔子打破貴族壟斷教育的局限，開創私人講學之風，有教無類。' },
+  { id: 104, unit: 'L4', tag: '字音辨析', q: '下列文句「 」中的字音，何者「前後完全相同」？', opts: ['「論」語精義 ／ 陷入囹「圄」', '功虧一「簣」 ／ 「匱」乏難耐', '三「省」吾身 ／ 不「省」人事', '奉「養」父母 ／ 飼「養」犬馬'], ans: 1, exp: '功虧一「簣」與「匱」乏皆讀ㄎㄨㄟˋ。(A)ㄌㄨㄣˊ／ㄩˇ；(C)ㄒㄧㄥˇ／ㄕㄥˇ；(D)ㄧㄤˋ(奉侍長輩)／ㄧㄤˇ(飼養)。' },
+  { id: 105, unit: 'L4', tag: '字音辨析', q: '「學而時習之，不亦說乎」句中的「說」字，其音義為何？', opts: ['ㄕㄨㄛ，說話談論', 'ㄩㄝˋ，通「悅」，喜悅', 'ㄕㄨㄟˋ，遊說勸勉', 'ㄩㄝˋ，閱讀經典'], ans: 1, exp: '「說」通「悅」，讀ㄩㄝˋ，愉快、喜悅之意。' },
+  { id: 106, unit: 'L4', tag: '字音辨析', q: '下列各選項中的「為」字，何者讀音為二聲「ㄨㄟˊ」？', opts: ['「為」人謀而不忠乎', '譬如「為」山', '「為」朋友兩肋插刀', '不足「為」外人道也（表介詞「替」）'], ans: 1, exp: '「譬如為山」之「為」為動詞「堆積、做」，讀ㄨㄟˊ；其餘表「替、給」皆讀四聲ㄨㄟˋ。' },
+  { id: 107, unit: 'L4', tag: '字音辨析', q: '下列哪一句中的「省」字讀音與其他三者「不同」？', opts: ['吾日三「省」吾身', '晨昏定「省」', '自我反「省」', '節「省」開支'], ans: 3, exp: '(D)讀ㄕㄥˇ；(A)(B)(C)皆讀ㄒㄧㄥˇ，有反省、探望關心之意。' },
+  { id: 108, unit: 'L4', tag: '主旨配對', q: '「譬如為山，未成一簣，止，吾止也；譬如平地，雖覆一簣，進，吾往也。」這段話主要闡明何種哲理？', opts: ['事在人為，持之以恆操之在己', '天命難違，凡事不可勉強', '登山必須備齊工具', '求學不如平整土地來得實在'], ans: 0, exp: '以堆土築山比喻求學，說明進展或停止全憑個人自主毅力與恆心。' },
+  { id: 109, unit: 'L4', tag: '主旨配對', q: '子游問孝，子曰：「今之孝者，是謂能養。至於犬馬，皆能有養；不敬，何以別乎？」孔子強調行孝最核心的要素為何？', opts: ['提供充裕的物質生活', '恭敬誠懇的內在心意', '早晚定時問候', '恪遵父母的所有命令'], ans: 1, exp: '孔子認為若只供給飲食而缺乏真誠的「敬意」，就與飼養犬馬毫無分別。' },
+  { id: 110, unit: 'L4', tag: '主旨配對', q: '曾子曰：「吾日三省吾身。」下列何者「不是」曾子每日自我反省的重點領域？', opts: ['替人辦事是否盡心竭力（忠）', '與朋友交往是否誠實信守（信）', '老師傳授的學業是否溫習（習）', '每天是否取得豐厚之利潤（利）'], ans: 3, exp: '曾子三省指為人謀而不忠乎、與朋友交而不信乎、傳不習乎。' },
+  { id: 111, unit: 'L4', tag: '主旨配對', q: '「三人行，必有我師焉」的下一句接著「擇其善者而從之，其不善者而改之」，這與下列哪一句古訓意旨最契合？', opts: ['見賢思齊，見不賢而內自省', '獨學而無友，則孤陋而寡聞', '三人成虎，事出有因', '敏而好學，不恥下問'], ans: 0, exp: '看到好的向其學習，看到壞的則檢討自省，正合「見賢思齊，見不賢而內自省」。' },
+  { id: 112, unit: 'L4', tag: '文言虛詞', q: '下列文句中的「而」字，何者屬於「轉折連詞（譯為：卻、但是）」？', opts: ['人不知「而」不慍', '學「而」時習之', '擇其善者「而」從之', '溫故「而」知新'], ans: 0, exp: '「人不知而不慍」（別人不了解我，「卻」不生氣）為轉折用法；其餘皆為順接連詞。' },
+  { id: 113, unit: 'L4', tag: '文言語法', q: '子曰：「不敬，何以別乎？」這句話在文言語法上屬於何種句型變換？', opts: ['省略句（省略主詞）', '倒裝句（疑問代詞前置，即「以何別乎」）', '被動句', '判斷句'], ans: 1, exp: '文言文疑問句中，代詞作介詞賓語常前置，「何以別乎」即「以何別乎」（用什麼來區別呢）。' },
+  { id: 114, unit: 'L4', tag: '修辭成語', q: '「譬如為山，未成一簣」衍生出下列哪一個著名的成語？', opts: ['功虧一簣', '簣土成山', '堆積如山', '覆水難收'], ans: 0, exp: '比喻事情只差最後一步卻半途而廢，極為惋惜。' },
+  { id: 115, unit: 'L4', tag: '修辭成語', q: '「為人謀而不忠乎？與朋友交而不信乎？傳不習乎？」在修辭上運用了下列何者？', opts: ['排比與激問', '對偶與誇飾', '映襯與轉化', '頂真與回文'], ans: 0, exp: '三個結構相同句子形成「排比」，且連續提出反躬自省的問句為「激問」。' },
+  { id: 116, unit: 'L4', tag: '修辭成語', q: '下列成語何者「不是」出自《論語》？', opts: ['任重道遠', '溫故知新', '捕風捉影', '當仁不讓'], ans: 2, exp: '「捕風捉影」出自《漢書·郊祀志》，非出自《論語》。' },
+  { id: 117, unit: 'L4', tag: '字音辨析', q: '「人不知而不慍」中的「慍」字讀音為何？', opts: ['ㄩㄣˋ', 'ㄨㄣ', 'ㄨㄣˇ', 'ㄧㄣˋ'], ans: 0, exp: '慍讀作ㄩㄣˋ，怨恨、生氣之意。' },
+  { id: 118, unit: 'L4', tag: '文意理解', q: '「學而時習之」的「時」字在句中應作何解釋最適當？', opts: ['時代', '經常、按時', '偶爾', '時間'], ans: 1, exp: '「時」為副詞，按時、經常之意。' },
+  { id: 119, unit: 'L4', tag: '文意理解', q: '「吾十有五而志於學，三十而立，四十而不惑」中「不惑」通常代稱幾歲？', opts: ['三十歲', '四十歲', '五十歲', '六十歲'], ans: 1, exp: '三十而立，四十而不惑，五十而知天命，六十而耳順。' },
+  { id: 120, unit: 'L4', tag: '核心思想', q: '孔子的思想學說以哪一個字為核心？', opts: ['仁', '義', '禮', '智'], ans: 0, exp: '孔子思想以「仁」為核心，孟子則仁義並稱。' },
+  { id: 121, unit: 'L4', tag: '文言語法', q: '「不亦說乎」、「不亦樂乎」句中的「亦」字字義為何？', opts: ['也是', '多麼、也', '已經', '如果'], ans: 1, exp: '「不亦……乎」為文言激問反詰句式，亦字在此有「豈、也」加強語氣之意。' },
+  { id: 122, unit: 'L4', tag: '字詞成語', q: '「三人行，必有我師焉」句中的「焉」字詞性與字義為何？', opts: ['句末助詞，無義', '代詞兼指示詞，在其中', '疑問副詞，何處', '連詞，於是'], ans: 1, exp: '「焉」在此作兼詞，相當於「於此」（在其中）。' },
+  { id: 123, unit: 'L4', tag: '修辭技巧', q: '「譬如為山……譬如平地……」二句在文意與結構上形成了什麼修辭手法？', opts: ['映襯', '借代', '擬人', '雙關'], ans: 0, exp: '將築山的停止與平地的進取對立並陳，形成鮮明的映襯（對比）。' },
+  { id: 124, unit: 'L4', tag: '文意理解', q: '「傳不習乎」的「傳」字字義為何？', opts: ['傳播名聲', '老師傳授的學業', '傳奇故事', '傳達命令'], ans: 1, exp: '動詞作名詞用，指老師傳授的知識與學業。' },
+  { id: 125, unit: 'L4', tag: '文學常識', q: '《論語》各篇篇名的命名原則為何？', opts: ['依據該篇談論的核心主題命名', '取各篇首章開頭的二至三個字命名', '由漢代皇帝親自命名', '依據孔子遊歷的國別命名'], ans: 1, exp: '《論語》各篇名多取每篇第一章開頭的二到三個字（如：學而、為政）。' },
+
+  // === 第五課 背影 ===
+  { id: 201, unit: 'L5', tag: '篇章結構', q: '朱自清《背影》一文，全篇共幾次寫到父親的「背影」？', opts: ['兩次', '三次', '四次', '五次'], ans: 2, exp: '全文共四次：首段開篇點題、車站攀爬月台買橘、揮別離去、文末在淚光中再現。' },
+  { id: 202, unit: 'L5', tag: '寫作手法', q: '《背影》第一段：「我與父親不相見已有二年餘了，我最不能忘記的是他的背影。」這運用了何種開篇技巧？', opts: ['開門見山法', '烘雲托月法', '欲揚先抑法', '先景後情法'], ans: 0, exp: '開篇直接破題，點出全文靈魂「父親的背影」，為開門見山法。' },
+  { id: 203, unit: 'L5', tag: '字音字形', q: '下列各組詞語的字音標註，何者「完全正確」？', opts: ['「蹣」跚：ㄇㄢˊ', '「差」使：ㄔㄞ', '舉「箸」：ㄓㄜˇ', '躊「躇」：ㄓㄨˋ'], ans: 1, exp: '蹣(ㄆㄢˊ)跚；舉箸(ㄓㄨˋ)；躊躇(ㄔㄡˊ ㄔㄨˊ)。' },
+  { id: 204, unit: 'L5', tag: '修辭技巧', q: '作者在文中說自己那時「真是太聰明了」，其中的「聰明」在修辭上屬於何者？', opts: ['倒反修辭（反語）', '轉化修辭', '誇飾修辭', '譬喻修辭'], ans: 0, exp: '表面讚賞，實際自責當年少不更事、未能體會父親的苦心與真情。' },
+  { id: 205, unit: 'L5', tag: '詞義成語', q: '下列何者不是成語中含「影」且意帶「消極貶抑」之詞？', opts: ['杯弓蛇影', '浮光掠影', '立竿見影', '捕風捉影'], ans: 2, exp: '「立竿見影」比喻功效立竿可見，形容成效極快，屬褒義或中性。' },
+  { id: 206, unit: 'L5', tag: '文意理解', q: '文中父親說「事已如此，不必難過，好在天無絕人之路！」展現父親何種形象？', opts: ['樂天知命毫不在意', '怨懟環境卻假裝豁達', '強忍悲痛以寬慰兒子的堅毅父愛', '剛愎自用不聽勸戒'], ans: 2, exp: '祖母喪事且父親失業，家境慘澹，父親仍竭力壓抑悲傷開導孩子。' },
+  { id: 207, unit: 'L5', tag: '字義辨析', q: '「躊躇」一詞的意思為何？', opts: ['猶豫不決', '腳步蹣跚', '歡欣鼓舞', '憤恨不平'], ans: 0, exp: '躊躇形容猶豫不決的樣子。' },
+  { id: 208, unit: 'L5', tag: '敘述結構', q: '《背影》一文在時間記敘的順序上屬於下列何者？', opts: ['順敘法', '倒敘法（現在→回憶過去→現在）', '插敘法', '補敘法'], ans: 1, exp: '從現在的思念切入，回憶當年浦口送別，最後又拉回現在讀信淚光中再現背影。' },
+  { id: 209, unit: 'L5', tag: '象徵意涵', q: '文中父親穿過鐵道買橘子，朱紅色「橘子」在文中象徵何者？', opts: ['吉祥平安與溫暖真摯的父愛', '家境富裕', '對政府的抗議', '父親喜歡吃水果'], ans: 0, exp: '朱紅的橘子象徵溫暖、吉祥與父親沉甸甸的愛。' },
+  { id: 210, unit: 'L5', tag: '詞語辨析', q: '「差使」在文中指何意？', opts: ['差遣奴僕', '公家差派的職務、工作', '信件', '差錯失誤'], ans: 1, exp: '舊稱公家機關中派任的職務或差事。' },
+  { id: 211, unit: 'L5', tag: '動作描寫', q: '父親攀爬月台時的動詞順序何者正確？', opts: ['探身、攀、縮、微傾', '攀、探身、微傾、縮', '微傾、縮、攀、探身', '探身、縮、微傾、攀'], ans: 0, exp: '先探身下去，再攀著上面，兩腳再向上縮，身子微傾。' },
+  { id: 212, unit: 'L5', tag: '字詞字形', q: '下列文句中的字形，何者完全正確？', opts: ['步履盤跚', '變賣典質', '舉箸提筆', '感情籌躇'], ans: 1, exp: '(A)蹣跚；(C)舉箸；(D)躊躇。變賣典質完全正確。' },
+  { id: 213, unit: 'L5', tag: '情感轉折', q: '作者在車上幾次流淚？其情感變化為何？', opts: ['兩次，由自責愧疚到感恩思念', '一次，單純傷心', '三次，由憤怒到後悔', '四次，毫無情感變化'], ans: 0, exp: '在望父買橘與離別時兩次落淚，由年少自傲轉為深刻感悟父愛與自責。' },
+  { id: 214, unit: 'L5', tag: '字詞成語', q: '形容一個人「形單影隻」，意思是指？', opts: ['身手敏捷', '孤獨一人，沒有同伴', '形影不離', '拍照技術精湛'], ans: 1, exp: '只有自己一個人和影子，形容非常孤單。' },
+  { id: 215, unit: 'L5', tag: '字義辨析', q: '「舉箸」的「箸」是指哪種器具？', opts: ['筷子', '毛筆', '湯匙', '酒杯'], ans: 0, exp: '箸即筷子之意。' },
+  { id: 216, unit: 'L5', tag: '生活細節', q: '父親送兒子上火車時，替他揀定哪裡的座位？', opts: ['靠車門處', '靠車窗處', '餐車車廂', '車頭第一排'], ans: 1, exp: '父親細心替他揀定了靠車窗的座位，並鋪好皮大衣。' },
+  { id: 217, unit: 'L5', tag: '字音辨析', q: '「狼藉」的「藉」字讀音為何？', opts: ['ㄐㄧˊ', 'ㄐㄧㄝˋ', 'ㄗㄜˊ', 'ㄐㄧ'], ans: 0, exp: '狼藉讀作ㄌㄤˊ ㄐㄧˊ，形容凌亂散落之態。' },
+  { id: 218, unit: 'L5', tag: '字音辨析', q: '「勾留」的「勾」字讀音為何？', opts: ['ㄍㄡ', 'ㄍㄡˋ', 'ㄐㄩ', 'ㄎㄡ'], ans: 0, exp: '勾留音ㄍㄡ ㄌㄧㄡˊ，停留在某地之意。' },
+  { id: 219, unit: 'L5', tag: '語境意涵', q: '父親離開時說「我走了，到那邊來信！」這句話展現出什麼情感？', opts: ['急著回家處理公事', '雖然離別仍時時刻刻懸念著遠行的孩子', '對兒子感到不耐煩', '客套寒暄'], ans: 1, exp: '平淡樸素的叮嚀，道盡父親無限的牽掛與懸念。' },
+  { id: 220, unit: 'L5', tag: '寫作特點', q: '朱自清散文風格主要特色為何？', opts: ['華麗鋪張，多用奇字', '質樸真摯，白描生動，情真意切', '辛辣諷刺，批判深刻', '奇幻瑰麗，神祕莫測'], ans: 1, exp: '朱自清散文以真摯素樸、白描細膩的情感著稱。' },
+  { id: 221, unit: 'L5', tag: '字詞成語', q: '「杯弓蛇影」這則成語的意思是？', opts: ['宴會上酒菜豐盛', '疑神疑鬼，自己嚇自己', '射箭技術高超', '蛇類偽裝能力強'], ans: 1, exp: '比喻因虛幻怪異之事而妄生疑懼、自我驚擾。' },
+  { id: 222, unit: 'L5', tag: '服飾描寫', q: '文中父親穿戴黑布小帽、深青布棉袍、黑布馬褂，這種暗色穿著主要用意是？', opts: ['當時家中有大喪，且營造出沉重壓抑的氛圍', '父親偏愛黑色', '當時最流行的服飾', '為了耐髒'], ans: 0, exp: '當時適逢祖母過世，黑色喪服襯托出家境慘澹與父親心情的沉重。' },
+  { id: 223, unit: 'L5', tag: '前後呼應', q: '《背影》文章結尾提到父親在信中寫道「大約大去之期不遠矣」，其中「大去」是指？', opts: ['出遠門旅行', '去世、死亡', '離開官場退休', '搬遷新家'], ans: 1, exp: '「大去」為婉轉指稱死亡、過世的詞語。' },
+  { id: 224, unit: 'L5', tag: '文意理解', q: '朱自清在文中寫「我讀到此處，在晶瑩的淚光中，又看見那肥胖的、青布棉袍、黑布馬褂的背影」，這種寫法在文章結構上叫什麼？', opts: ['首尾呼應法', '伏筆法', '插敘法', '借題發揮'], ans: 0, exp: '結尾再次呼應首段與買橘時的背影，深化主旨，為首尾呼應。' },
+
+  // === 第六課 心囚 ===
+  { id: 301, unit: 'L6', tag: '作者常識', q: '《心囚》的作者「杏林子」本名為何？', opts: ['劉俠', '張曉風', '琦君', '林良'], ans: 0, exp: '杏林子本名劉俠女士，自幼罹患類風濕性關節炎，仍熱愛寫作不輟。' },
+  { id: 302, unit: 'L6', tag: '字音字形', q: '下列文句中的字形，何者「完全正確」？', opts: ['這件工藝品作工精細，絕非粗造濫造', '面容憔悴的老人坐在公園一隅', '他因貪念而陷入了囹圄（ㄨˇ）', '聽到噩耗傳來，大家都心驚膽顫'], ans: 1, exp: '(A)粗「糙」濫造；(C)囹圄音ㄩˇ；(D)心驚膽「戰」。' },
+  { id: 303, unit: 'L6', tag: '核心主旨', q: '《心囚》篇名中所謂的「囚」，在文中究竟何所指？', opts: ['因違法犯罪被判刑關押', '肉體受疾病折磨而無法走動', '心靈受制於名利、貪念、仇恨或自憐', '被父母家庭的期許所限制'], ans: 2, exp: '作者指出肉體的疾病不足懼，心靈的執迷、貪婪與自怨自艾才是真正的無形監獄。' },
+  { id: 304, unit: 'L6', tag: '公益奉獻', q: '杏林子將稿費與積蓄全數捐出，創辦了哪一個幫助弱勢與身障者的基金會？', opts: ['伊甸社會福利基金會', '至善社會福利基金會', '創世社會福利基金會', '慈濟功德會'], ans: 0, exp: '杏林子創立伊甸基金會，落實「服務弱勢、散播大愛」的人生實踐。' },
+  { id: 305, unit: 'L6', tag: '字音辨析', q: '「囹圄」的正確讀音為何？', opts: ['ㄌㄧㄥˊ ㄩˇ', 'ㄌㄧㄣˊ ㄨˇ', 'ㄌㄧㄥˊ ㄨˊ', 'ㄌㄧㄣˊ ㄩ'], ans: 0, exp: '囹圄讀作ㄌㄧㄥˊ ㄩˇ，原意為監獄。' },
+  { id: 306, unit: 'L6', tag: '結構技巧', q: '《心囚》一文在論證結構上主要運用了何種手法？', opts: ['正反對比論述', '純粹抒情散文', '神話寓言象徵', '倒敘懸疑法'], ans: 0, exp: '透過自身殘疾卻自由，對比四肢健全者卻心靈受錮，正反對比鮮明。' },
+  { id: 307, unit: 'L6', tag: '成語應用', q: '「勝人者有力，自勝者強」最符合《心囚》文中的何種心境？', opts: ['克服自卑自憐，戰勝心魔主宰自我', '努力在考試競爭中打敗同學', '勤加鍛鍊身體練出肌肉', '利用權勢統治他人'], ans: 0, exp: '克服內在的心靈牢籠，成為真正的強者。' },
+  { id: 308, unit: 'L6', tag: '字音辨析', q: '「憔悴」的正確字音為何？', opts: ['ㄑㄧㄠˊ ㄘㄨㄟˋ', 'ㄐㄧㄠ ㄗㄨㄟˋ', 'ㄑㄧㄠˊ ㄙㄨㄟˋ', 'ㄐㄧㄠˊ ㄘㄨㄟˋ'], ans: 0, exp: '憔悴音ㄑㄧㄠˊ ㄘㄨㄟˋ，面容瘦弱枯槁之貌。' },
+  { id: 309, unit: 'L6', tag: '文意理解', q: '作者認為能夠真正打開心靈枷鎖的「鑰匙」是？', opts: ['寬容、愛與豁達的心胸', '大量的財富', '頂尖的名校學歷', '高超的醫術'], ans: 0, exp: '解開自囚牢籠的關鍵在於自己樂觀、熱愛生命的心態。' },
+  { id: 310, unit: 'L6', tag: '字詞字義', q: '「桎梏」的原意與引申義分別為何？', opts: ['刑具；引申為束縛、限制', '兵器；引申為打仗', '房屋；引申為家產', '首飾；引申為美麗'], ans: 0, exp: '古代腳鐐手銬稱為桎梏，引申為對心靈或行動的束縛。' },
+  { id: 311, unit: 'L6', tag: '修辭技巧', q: '「誰能將我們關在囚室中？除了我們自己。」這句話運用了什麼修辭？', opts: ['設問（激問/自問自答）', '排比', '誇飾', '映襯'], ans: 0, exp: '自問並強烈給予答案，兼具提問與激勵之效。' },
+  { id: 312, unit: 'L6', tag: '字音辨析', q: '「粗糙」的「糙」字正確讀音為？', opts: ['ㄘㄠ', 'ㄗㄠˋ', 'ㄘㄠˋ', 'ㄗㄠ'], ans: 0, exp: '粗糙讀作ㄘㄠ，不光滑、不細緻之意。' },
+  { id: 313, unit: 'L6', tag: '字形辨析', q: '下列詞語何者字形「完全沒有錯誤」？', opts: ['自怨自艾', '作繭自薄', '畫地自限', '心馳神往'], ans: 0, exp: '(B)作繭自「縛」；畫地自限亦常用，但自怨自「艾」（音ㄧˋ）字義最標準無誤。' },
+  { id: 314, unit: 'L6', tag: '文意理解', q: '杏林子雖然自幼小學肄業，但她如何自學成為傑出作家？', opts: ['透過廣播函授與海量閱讀寫作', '聘請外國家教', '出國留學', '抄襲古代範本'], ans: 0, exp: '杏林子透過廣播課程、函授進修與持之以恆的閱讀自修成才。' },
+  { id: 315, unit: 'L6', tag: '心態轉變', q: '作者面對嚴重疾病時，最後選擇了怎樣的人生觀？', opts: ['怨天尤人，憤世嫉俗', '正視現實，用文字與愛回饋社會', '隱居山林，不問世事', '放棄治療，消極度日'], ans: 1, exp: '化病痛為生命的養分，創立基金會奉獻社會。' },
+  { id: 316, unit: 'L6', tag: '文意辨析', q: '「作繭自縛」這句成語最適合用來形容文中何種人？', opts: ['心靈自設牢籠、受負面執念所困者', '養蠶取絲的農夫', '努力編織夢想的年輕人', '犯罪入獄的罪犯'], ans: 0, exp: '比喻自己製造條件或執念把自己困住。' },
+  { id: 317, unit: 'L6', tag: '字義辨析', q: '「自怨自艾」的「艾」字本義為何？', opts: ['艾草', '治理、改正、割除病痛', '嘆氣', '年老'], ans: 1, exp: '艾音ㄧˋ，原指割除悔改，現多指悔恨自責。' },
+  { id: 318, unit: 'L6', tag: '文意理解', q: '《心囚》這篇文章屬於何種文體？', opts: ['記敘兼抒情說理之論說文/雜文', '純粹報導文學', '章回小說', '古典駢文'], ans: 0, exp: '藉由個人經歷抒發感悟，並論證人不可畫地自限的哲理散文。' },
+  { id: 319, unit: 'L6', tag: '修辭技巧', q: '「身體雖然殘廢，但心靈可以自由飛翔」運用了何種修辭？', opts: ['映襯', '譬喻', '轉化', '頂真'], ans: 0, exp: '以「身體殘障」與「心靈自由」互相對比，形成鮮明映襯。' },
+  { id: 320, unit: 'L6', tag: '作者生平', q: '杏林子作品所展現出的最主要情感基調為？', opts: ['悲觀灰暗', '積極樂觀、充滿對生命的熱愛與韌性', '冷嘲熱諷', '迷信宿命'], ans: 1, exp: '其文字洋溢著對生命的熱愛、無比的勇氣與堅毅之光。' },
+
+  // === 語文常識（二）閱讀策略 ===
+  { id: 401, unit: 'ALL', tag: '閱讀策略', q: '下列何者屬於現代生活情境中的「非連續文本」？', opts: ['《背影》全文段落散文', '高鐵車次時刻表與票價對照圖', '《論語》的篇章對話錄', '記敘性新聞報導'], ans: 1, exp: '時刻表、圖表、地圖、數據表等由非完整語句段落構成之文本稱為非連續文本。' },
+  { id: 402, unit: 'ALL', tag: '閱讀策略', q: '在自我提問策略中，「3W」提問法通常涵蓋哪三大提問維度？', opts: ['Who, Where, When', 'What, Why, How', 'Which, Whose, Whom', 'Will, Would, Won'], ans: 1, exp: '3W 提問策略通常指：作者寫了什麼（What）、為何寫（Why）、如何寫與應用（How）。' },
+  { id: 403, unit: 'ALL', tag: '閱讀策略', q: '閱讀圖表與文字結合的混合文本時，最適當的第一個步驟是？', opts: ['先看圖表標題與座標軸圖例，掌握主旨架構', '跳過圖表直接讀結論', '只讀註腳小字', '隨意猜測圖表涵義'], ans: 0, exp: '先掌握標題與圖例刻度，才能迅速正確理解圖表核心訊息。' },
+  { id: 404, unit: 'ALL', tag: '閱讀策略', q: '「連續文本」的主要特徵為何？', opts: ['由句子和段落循序組織而成的文字', '由大量長條圖與圓餅圖組成', '只有條列式清單', '沒有標點符號的文字'], ans: 0, exp: '連續文本由完整句子與段落邏輯展開，如一般散文、小說、新聞。' }
+];
+
+let currentMode = 'ALL';
+let activeQuiz = [];
+
+// 碼表計時變數
+let timerInterval = null;
+let secondsElapsed = 0;
+let lastFormattedDuration = "00:00";
+
+// 若要啟用 Google Sheets 自動同步，請將您部署好的 Apps Script URL 填入下方引號中：
+const GOOGLE_SHEET_URL = ""; 
+
+const quizArea = document.getElementById('quiz-area');
+const logArea = document.getElementById('log-area');
+const startScreen = document.getElementById('start-screen');
+const examScreen = document.getElementById('exam-screen');
+const resultScreen = document.getElementById('result-screen');
+const quizForm = document.getElementById('quiz-form');
+const floatingTimerBar = document.getElementById('floating-timer-bar');
+const stopwatchDisplay = document.getElementById('stopwatch-display');
+const floatingModeName = document.getElementById('floating-mode-name');
+
+function switchMode(mode) {
+  stopTimer();
+  currentMode = mode;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  if (mode === 'LOG') {
+    quizArea.style.display = 'none';
+    logArea.style.display = 'block';
+    renderLogs();
+  } else {
+    quizArea.style.display = 'block';
+    logArea.style.display = 'none';
+    startScreen.style.display = 'block';
+    examScreen.style.display = 'none';
+    resultScreen.style.display = 'none';
+    
+    let intro = '';
+    if(mode === 'ALL') intro = '🏆 <strong>第二次段考綜合模擬考卷</strong>：全面混合第4、5、6課與閱讀策略，隨機抽選 25 題，每題 4 分，滿分 100 分。';
+    if(mode === 'L4_SPECIAL') intro = '⭐ <strong>《論語選》五大常考題型特訓卷</strong>：聚焦文學常識、多音通假、主旨配對、虛詞語法、修辭成語，滿分 100 分！';
+    if(mode === 'L4') intro = '📗 <strong>第四課《論語選》專屬練習卷</strong>：聚焦論語各則核心文意、生字新詞與君子修為，滿分 100 分！';
+    if(mode === 'L5') intro = '📘 <strong>第五課《背影》專屬練習卷</strong>：聚焦記敘線索、開門見山與倒反修辭、父子真摯互動，滿分 100 分！';
+    if(mode === 'L6') intro = '📙 <strong>第六課《心囚》專屬練習卷</strong>：聚焦杏林子克服殘疾人生哲理、對比結構與心靈釋放，滿分 100 分！';
+    document.getElementById('unit-intro').innerHTML = intro;
+  }
+}
+
+// 碼表計時器操作
+function startTimer() {
+  stopTimer();
+  secondsElapsed = 0;
+  updateTimerDisplay();
+  let modeTitleMap = {
+    'ALL':'🏆 綜合模擬考卷',
+    'L4_SPECIAL':'⭐ 論語常考特訓',
+    'L4':'📗 第四課 論語選',
+    'L5':'📘 第五課 背影',
+    'L6':'📙 第六課 心囚'
+  };
+  floatingModeName.innerText = `📝 ${modeTitleMap[currentMode] || '測驗進行中'}`;
+  floatingTimerBar.style.display = 'block';
+
+  timerInterval = setInterval(() => {
+    secondsElapsed++;
+    updateTimerDisplay();
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  let m = Math.floor(secondsElapsed / 60);
+  let s = secondsElapsed % 60;
+  let formatted = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  stopwatchDisplay.innerText = formatted;
+  lastFormattedDuration = formatted;
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+  floatingTimerBar.style.display = 'none';
+}
+
+function startQuiz() {
+  let pool = [];
+  if (currentMode === 'ALL') {
+    pool = [...questionsDB];
+  } else if (currentMode === 'L4_SPECIAL') {
+    pool = questionsDB.filter(q => q.unit === 'L4');
+  } else {
+    let unitPool = questionsDB.filter(q => q.unit === currentMode);
+    if (unitPool.length >= 25) {
+      pool = unitPool;
+    } else {
+      let extra = questionsDB.filter(q => q.unit !== currentMode);
+      pool = [...unitPool, ...extra];
+    }
+  }
+
+  // 固定隨機抽取 25 題
+  activeQuiz = [...pool].sort(() => 0.5 - Math.random()).slice(0, 25);
+
+  quizForm.innerHTML = '';
+  activeQuiz.forEach((q, idx) => {
+    let qDiv = document.createElement('div');
+    qDiv.className = 'q-item';
+    let optsHtml = q.opts.map((opt, i) => `
+      <label class="opt-label">
+        <input type="radio" name="q_${idx}" value="${i}"> ${opt}
+      </label>
+    `).join('');
+    qDiv.innerHTML = `
+      <span class="q-tag">${q.tag || '考點測驗'}</span>
+      <div class="q-title">第 ${idx + 1} 題（4分）：${q.q}</div>
+      ${optsHtml}
+    `;
+    quizForm.appendChild(qDiv);
+  });
+
+  startScreen.style.display = 'none';
+  examScreen.style.display = 'block';
+  resultScreen.style.display = 'none';
+
+  // 啟動碼表與懸浮列
+  startTimer();
+  window.scrollTo({ top: 120, behavior: 'smooth' });
+}
+
+function submitExam() {
+  stopTimer(); // 停止計時並記錄總耗時
+
+  let correctCount = 0;
+  let wrongList = [];
+  let pointsPerQ = 4; // 25 題，每題 4 分，滿分 100 分
+
+  activeQuiz.forEach((q, idx) => {
+    let selected = document.querySelector(`input[name="q_${idx}"]:checked`);
+    let userAns = selected ? parseInt(selected.value) : -1;
+    if (userAns === q.ans) {
+      correctCount++;
+    } else {
+      wrongList.push({ q: q, userAns: userAns, idx: idx + 1 });
+    }
+  });
+
+  let finalScore = correctCount * pointsPerQ;
+  let durationStr = lastFormattedDuration;
+
+  saveRecord(finalScore, wrongList.length, durationStr);
+  renderResults(finalScore, wrongList, durationStr);
+}
+
+function renderResults(score, wrongList, durationStr) {
+  examScreen.style.display = 'none';
+  resultScreen.style.display = 'block';
+
+  let reviewHtml = wrongList.length === 0 
+    ? '<p style="color:var(--success); font-weight:bold; text-align:center; font-size:1.1rem; padding:10px;">🌟 太厲害了！本次練習 25 題全對，榮獲滿分 100 分！</p>' 
+    : '';
+
+  wrongList.forEach(w => {
+    let chosenText = w.userAns === -1 ? '（未作答）' : w.q.opts[w.userAns];
+    reviewHtml += `
+      <div class="wrong-q">
+        <span class="q-tag">${w.q.tag || '考點'}</span>
+        <div style="font-weight:700; margin:4px 0;">第 ${w.idx} 題：${w.q.q}</div>
+        <div>學生作答：<span class="wrong-ans">${chosenText}</span> ｜ 正確答案：<span class="correct-ans">${w.q.opts[w.q.ans]}</span></div>
+        <div class="explanation">💡 <strong>解析：</strong>${w.q.exp}</div>
+      </div>
+    `;
+  });
+
+  resultScreen.innerHTML = `
+    <h2 style="text-align:center; color:var(--primary);">測驗成果與診斷建議</h2>
+    <div class="score-badge">${score} <span style="font-size:1.1rem; color:var(--text-muted);">/ 100 分</span></div>
+    <div class="duration-badge">⏱️ 作答總耗時：${durationStr}</div>
+    <div class="analysis-card">
+      <h3>🎯 學習成就與精準複習指引：</h3>
+      <p style="margin-top:6px;">${getAdvice(score)}</p>
+    </div>
+    <div class="analysis-card">
+      <h3>📝 本次錯題即時訂正本（共 ${wrongList.length} 題）：</h3>
+      ${reviewHtml}
+    </div>
+    <button class="btn-start" onclick="startQuiz()" style="margin-top:20px;">🔄 重新抽取題目再練一次</button>
+  `;
+  window.scrollTo({ top: 120, behavior: 'smooth' });
+}
+
+function getAdvice(score) {
+  if (score === 100) return '滿分王者！對第二次段考核心概念掌握得淋漓盡致，請繼續維持手感！';
+  if (score >= 88) return '表現卓越！基礎文意與國學常識非常扎實，僅需留意個別字音多音字辨析細節即可坐穩段考高分！';
+  if (score >= 72) return '掌握良好！對於課文大意清楚，但遇到修辭變換（倒反、激問）或文言文倒裝句型時容易失誤，建議多針對錯題解析精讀。';
+  if (score >= 60) return '及格邊緣！字音通假（如：說、慍、省、養）與成語背景尚不夠純熟，建議將課本字音字形與注釋重讀一遍。';
+  return '需要補強！目前對於文言字義與文本結構掌握度不足，請先暫停隨機刷題，翻開課本精讀課文後再進行挑戰！';
+}
+
+function saveRecord(score, wrongCount, durationStr) {
+  let records = JSON.parse(localStorage.getItem('chinese_exam_logs_final') || '[]');
+  let now = new Date();
+  let timeStr = `${now.getMonth()+1}月${now.getDate()}日 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  let modeName = {
+    'ALL':'綜合模擬考卷',
+    'L4_SPECIAL':'論語常考特訓',
+    'L4':'第四課 論語選',
+    'L5':'第五課 背影',
+    'L6':'第六課 心囚'
+  }[currentMode];
+
+  // 記錄包含作答總耗時 duration
+  let recordItem = { 
+    subject: "國文",
+    time: timeStr, 
+    mode: modeName, 
+    score: score, 
+    wrongs: wrongCount,
+    duration: durationStr
+  };
+  
+  records.unshift(recordItem);
+  localStorage.setItem('chinese_exam_logs_final', JSON.stringify(records));
+
+  // 自動寫入 Google Sheets（同時寫入「全部總覽」與「國文」分頁）
+  if (GOOGLE_SHEET_URL && GOOGLE_SHEET_URL.trim() !== "") {
+    fetch(GOOGLE_SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(recordItem)
+    }).catch(err => console.log('Google Sheets 同步失敗:', err));
+  }
+}
+
+function renderLogs() {
+  let records = JSON.parse(localStorage.getItem('chinese_exam_logs_final') || '[]');
+  let tbody = document.getElementById('log-tbody');
+  tbody.innerHTML = '';
+  if (records.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:20px;">尚無任何測驗紀錄，請先選擇單元進行測驗！</td></tr>';
+    return;
+  }
+  records.forEach(r => {
+    let tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.time}</td>
+      <td><strong>${r.mode}</strong></td>
+      <td style="font-weight:800; color:${r.score>=80?'var(--success)':(r.score>=60?'var(--primary)':'var(--danger)')}">${r.score} 分</td>
+      <td>${r.wrongs} 題</td>
+      <td style="font-family:monospace; font-weight:600; color:var(--text-muted);">${r.duration || '--:--'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// 匯出 CSV 檔案（可直接匯入 Google 試算表，包含耗時）
+function exportToCSV() {
+  let records = JSON.parse(localStorage.getItem('chinese_exam_logs_final') || '[]');
+  if (records.length === 0) {
+    alert('目前尚無測驗紀錄可匯出！');
+    return;
+  }
+  // 建立 UTF-8 BOM 與 5 個欄位
+  let csvContent = "\uFEFF時間,測驗單元,得分,錯題數,作答耗時\n";
+  records.forEach(r => {
+    csvContent += `"${r.time}","${r.mode}",${r.score},${r.wrongs},"${r.duration || '--:--'}"\n`;
+  });
+
+  let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  let link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `國文段考成績紀錄_${new Date().toISOString().slice(0,10)}.csv`;
+  link.click();
+}
+</script>
+</body>
+</html>
